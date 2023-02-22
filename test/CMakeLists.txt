@@ -6,6 +6,7 @@ enable_testing()
 list(APPEND tests
     test_slist
     test_dlist
+    test_ringbuf
 )
 
 foreach(test ${tests})
