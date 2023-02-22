@@ -30,14 +30,14 @@ struct _snode {
 	struct _snode *next;
 };
 
-typedef struct _snode sys_snode_t;
+typedef struct _snode snode_t;
 
 struct _slist {
-	sys_snode_t *head;
-	sys_snode_t *tail;
+	snode_t *head;
+	snode_t *tail;
 };
 
-typedef struct _slist sys_slist_t;
+typedef struct _slist slist_t;
 
  /**
   * @defgroup single-linked-list_apis Single-linked list
@@ -51,18 +51,18 @@ typedef struct _slist sys_slist_t;
  *
  * User _MUST_ add the loop statement curly braces enclosing its own code:
  *
- *     SYS_SLIST_FOR_EACH_NODE(l, n) {
+ *     SLIST_FOR_EACH_NODE(l, n) {
  *         <user code>
  *     }
  *
- * This and other SYS_SLIST_*() macros are not thread safe.
+ * This and other SLIST_*() macros are not thread safe.
  *
- * @param __sl A pointer on a sys_slist_t to iterate on
- * @param __sn A sys_snode_t pointer to peek each node of the list
+ * @param __sl A pointer on a slist_t to iterate on
+ * @param __sn A snode_t pointer to peek each node of the list
  */
-#define SYS_SLIST_FOR_EACH_NODE(__sl, __sn)				\
-	for (__sn = sys_slist_peek_head(__sl); __sn != NULL;	\
-	     __sn = sys_slist_peek_next(__sn))
+#define SLIST_FOR_EACH_NODE(__sl, __sn)				\
+	for (__sn = slist_peek_head(__sl); __sn != NULL;	\
+	     __sn = slist_peek_next(__sn))
 
 /**
  * @brief Provide the primitive to iterate on a list, from a node in the list
@@ -70,25 +70,25 @@ typedef struct _slist sys_slist_t;
  *
  * User _MUST_ add the loop statement curly braces enclosing its own code:
  *
- *     SYS_SLIST_ITERATE_FROM_NODE(l, n) {
+ *     SLIST_ITERATE_FROM_NODE(l, n) {
  *         <user code>
  *     }
  *
- * Like SYS_SLIST_FOR_EACH_NODE(), but __dn already contains a node in the list
+ * Like SLIST_FOR_EACH_NODE(), but __dn already contains a node in the list
  * where to start searching for the next entry from. If NULL, it starts from
  * the head.
  *
- * This and other SYS_SLIST_*() macros are not thread safe.
+ * This and other SLIST_*() macros are not thread safe.
  *
- * @param __sl A pointer on a sys_slist_t to iterate on
- * @param __sn A sys_snode_t pointer to peek each node of the list
+ * @param __sl A pointer on a slist_t to iterate on
+ * @param __sn A snode_t pointer to peek each node of the list
  *             it contains the starting node, or NULL to start from the head
  */
 #define SLIST_ITERATE_FROM_NODE(__sl, __sn)				\
 	for (__sn = __sn ? slist_peek_next_no_check(__sn)	\
 			 : slist_peek_head(__sl);		\
 	     __sn != NULL;						\
-	     __sn = sys_slist_peek_next(__sn))
+	     __sn = slist_peek_next(__sn))
 
 /**
  * @brief Provide the primitive to safely iterate on a list
@@ -96,62 +96,62 @@ typedef struct _slist sys_slist_t;
  *
  * User _MUST_ add the loop statement curly braces enclosing its own code:
  *
- *     SYS_SLIST_FOR_EACH_NODE_SAFE(l, n, s) {
+ *     SLIST_FOR_EACH_NODE_SAFE(l, n, s) {
  *         <user code>
  *     }
  *
- * This and other SYS_SLIST_*() macros are not thread safe.
+ * This and other SLIST_*() macros are not thread safe.
  *
- * @param __sl A pointer on a sys_slist_t to iterate on
- * @param __sn A sys_snode_t pointer to peek each node of the list
- * @param __sns A sys_snode_t pointer for the loop to run safely
+ * @param __sl A pointer on a slist_t to iterate on
+ * @param __sn A snode_t pointer to peek each node of the list
+ * @param __sns A snode_t pointer for the loop to run safely
  */
 #define SLIST_FOR_EACH_NODE_SAFE(__sl, __sn, __sns)			\
 	for (__sn = slist_peek_head(__sl),			\
 		     __sns = slist_peek_next(__sn);	\
 	     __sn != NULL ; __sn = __sns,				\
-		     __sns = sys_slist_peek_next(__sn))
+		     __sns = slist_peek_next(__sn))
 
 /*
  * @brief Provide the primitive to resolve the container of a list node
  * Note: it is safe to use with NULL pointer nodes
  *
- * @param __ln A pointer on a sys_node_t to get its container
+ * @param __ln A pointer on a node_t to get its container
  * @param __cn Container struct type pointer
- * @param __n The field name of sys_node_t within the container struct
+ * @param __n The field name of node_t within the container struct
  */
-#define SYS_SLIST_CONTAINER(__ln, __cn, __n) \
+#define SLIST_CONTAINER(__ln, __cn, __n) \
 	((__ln) ? CONTAINER_OF((__ln), __typeof__(*(__cn)), __n) : NULL)
 
 /*
  * @brief Provide the primitive to peek container of the list head
  *
- * @param __sl A pointer on a sys_slist_t to peek
+ * @param __sl A pointer on a slist_t to peek
  * @param __cn Container struct type pointer
- * @param __n The field name of sys_node_t within the container struct
+ * @param __n The field name of node_t within the container struct
  */
-#define SYS_SLIST_PEEK_HEAD_CONTAINER(__sl, __cn, __n) \
-	SYS_SLIST_CONTAINER(sys_slist_peek_head(__sl), __cn, __n)
+#define SLIST_PEEK_HEAD_CONTAINER(__sl, __cn, __n) \
+	SLIST_CONTAINER(slist_peek_head(__sl), __cn, __n)
 
 /*
  * @brief Provide the primitive to peek container of the list tail
  *
- * @param __sl A pointer on a sys_slist_t to peek
+ * @param __sl A pointer on a slist_t to peek
  * @param __cn Container struct type pointer
- * @param __n The field name of sys_node_t within the container struct
+ * @param __n The field name of node_t within the container struct
  */
-#define SYS_SLIST_PEEK_TAIL_CONTAINER(__sl, __cn, __n) \
-	SYS_SLIST_CONTAINER(sys_slist_peek_tail(__sl), __cn, __n)
+#define SLIST_PEEK_TAIL_CONTAINER(__sl, __cn, __n) \
+	SLIST_CONTAINER(slist_peek_tail(__sl), __cn, __n)
 
 /*
  * @brief Provide the primitive to peek the next container
  *
  * @param __cn Container struct type pointer
- * @param __n The field name of sys_node_t within the container struct
+ * @param __n The field name of node_t within the container struct
  */
-#define SYS_SLIST_PEEK_NEXT_CONTAINER(__cn, __n) \
-	((__cn) ? SYS_SLIST_CONTAINER(					\
-			sys_slist_peek_next(&((__cn)->__n)),	\
+#define SLIST_PEEK_NEXT_CONTAINER(__cn, __n) \
+	((__cn) ? SLIST_CONTAINER(					\
+			slist_peek_next(&((__cn)->__n)),	\
 			__cn, __n) : NULL)
 
 /**
@@ -160,18 +160,18 @@ typedef struct _slist sys_slist_t;
  *
  * User _MUST_ add the loop statement curly braces enclosing its own code:
  *
- *     SYS_SLIST_FOR_EACH_CONTAINER(l, c, n) {
+ *     SLIST_FOR_EACH_CONTAINER(l, c, n) {
  *         <user code>
  *     }
  *
- * @param __sl A pointer on a sys_slist_t to iterate on
+ * @param __sl A pointer on a slist_t to iterate on
  * @param __cn A pointer to peek each entry of the list
- * @param __n The field name of sys_node_t within the container struct
+ * @param __n The field name of node_t within the container struct
  */
-#define SYS_SLIST_FOR_EACH_CONTAINER(__sl, __cn, __n)			\
-	for (__cn = SYS_SLIST_PEEK_HEAD_CONTAINER(__sl, __cn, __n);	\
+#define SLIST_FOR_EACH_CONTAINER(__sl, __cn, __n)			\
+	for (__cn = SLIST_PEEK_HEAD_CONTAINER(__sl, __cn, __n);	\
 	     __cn != NULL;						\
-	     __cn = SYS_SLIST_PEEK_NEXT_CONTAINER(__cn, __n))
+	     __cn = SLIST_PEEK_NEXT_CONTAINER(__cn, __n))
 
 /**
  * @brief Provide the primitive to safely iterate on a list under a container
@@ -179,20 +179,20 @@ typedef struct _slist sys_slist_t;
  *
  * User _MUST_ add the loop statement curly braces enclosing its own code:
  *
- *     SYS_SLIST_FOR_EACH_NODE_SAFE(l, c, cn, n) {
+ *     SLIST_FOR_EACH_NODE_SAFE(l, c, cn, n) {
  *         <user code>
  *     }
  *
- * @param __sl A pointer on a sys_slist_t to iterate on
+ * @param __sl A pointer on a slist_t to iterate on
  * @param __cn A pointer to peek each entry of the list
  * @param __cns A pointer for the loop to run safely
- * @param __n The field name of sys_node_t within the container struct
+ * @param __n The field name of node_t within the container struct
  */
-#define SYS_SLIST_FOR_EACH_CONTAINER_SAFE(__sl, __cn, __cns, __n)	\
-	for (__cn = SYS_SLIST_PEEK_HEAD_CONTAINER(__sl, __cn, __n),   \
-	     __cns = SYS_SLIST_PEEK_NEXT_CONTAINER(__cn, __n); \
+#define SLIST_FOR_EACH_CONTAINER_SAFE(__sl, __cn, __cns, __n)	\
+	for (__cn = SLIST_PEEK_HEAD_CONTAINER(__sl, __cn, __n),   \
+	     __cns = SLIST_PEEK_NEXT_CONTAINER(__cn, __n); \
 	     __cn != NULL; __cn = __cns,				\
-	     __cns = SYS_SLIST_PEEK_NEXT_CONTAINER(__cn, __n))
+	     __cns = SLIST_PEEK_NEXT_CONTAINER(__cn, __n))
 
 
 /**
@@ -200,30 +200,30 @@ typedef struct _slist sys_slist_t;
  *
  * @param list A pointer on the list to initialize
  */
-static inline void sys_slist_init(sys_slist_t *list)
+static inline void slist_init(slist_t *list)
 {
 	list->head = NULL;
 	list->tail = NULL;
 }
 
-#define SYS_SLIST_STATIC_INIT(ptr_to_list) {NULL, NULL}
+#define SLIST_STATIC_INIT(ptr_to_list) {NULL, NULL}
 
-static inline sys_snode_t *z_snode_next_peek(sys_snode_t *node)
+static inline snode_t *z_snode_next_peek(snode_t *node)
 {
 	return node->next;
 }
 
-static inline void z_snode_next_set(sys_snode_t *parent, sys_snode_t *child)
+static inline void z_snode_next_set(snode_t *parent, snode_t *child)
 {
 	parent->next = child;
 }
 
-static inline void z_slist_head_set(sys_slist_t *list, sys_snode_t *node)
+static inline void z_slist_head_set(slist_t *list, snode_t *node)
 {
 	list->head = node;
 }
 
-static inline void z_slist_tail_set(sys_slist_t *list, sys_snode_t *node)
+static inline void z_slist_tail_set(slist_t *list, snode_t *node)
 {
 	list->tail = node;
 }
@@ -235,7 +235,7 @@ static inline void z_slist_tail_set(sys_slist_t *list, sys_snode_t *node)
  *
  * @return A pointer on the first node of the list (or NULL if none)
  */
-static inline sys_snode_t *sys_slist_peek_head(sys_slist_t *list)
+static inline snode_t *slist_peek_head(slist_t *list)
 {
 	return list->head;
 }
@@ -247,7 +247,7 @@ static inline sys_snode_t *sys_slist_peek_head(sys_slist_t *list)
  *
  * @return A pointer on the last node of the list (or NULL if none)
  */
-static inline sys_snode_t *sys_slist_peek_tail(sys_slist_t *list)
+static inline snode_t *slist_peek_tail(slist_t *list)
 {
 	return list->tail;
 }
@@ -259,21 +259,21 @@ static inline sys_snode_t *sys_slist_peek_tail(sys_slist_t *list)
  *
  * @return a boolean, true if it's empty, false otherwise
  */
-static inline bool sys_slist_is_empty(sys_slist_t *list)
+static inline bool slist_is_empty(slist_t *list)
 {
-    return (sys_slist_peek_head(list) == NULL);
+    return (slist_peek_head(list) == NULL);
 }
 
 /**
  * @brief Peek the next node from current node, node is not NULL
  *
- * Faster then sys_slist_peek_next() if node is known not to be NULL.
+ * Faster then slist_peek_next() if node is known not to be NULL.
  *
  * @param node A pointer on the node where to peek the next node
  *
  * @return a pointer on the next node (or NULL if none)
  */
-static inline sys_snode_t *sys_slist_peek_next_no_check(sys_snode_t *node)
+static inline snode_t *slist_peek_next_no_check(snode_t *node)
 {
     return node->next;
 }
@@ -285,48 +285,48 @@ static inline sys_snode_t *sys_slist_peek_next_no_check(sys_snode_t *node)
  *
  * @return a pointer on the next node (or NULL if none)
  */
-static inline sys_snode_t *sys_slist_peek_next(sys_snode_t *node)
+static inline snode_t *slist_peek_next(snode_t *node)
 {
     return node != NULL ?
-        sys_slist_peek_next_no_check(node) :
+        slist_peek_next_no_check(node) :
         NULL;
 }
 
 /**
  * @brief Prepend a node to the given list
  *
- * This and other sys_slist_*() functions are not thread safe.
+ * This and other slist_*() functions are not thread safe.
  *
  * @param list A pointer on the list to affect
  * @param node A pointer on the node to prepend
  */
-static inline void sys_slist_prepend(sys_slist_t *list, sys_snode_t *node)
+static inline void slist_prepend(slist_t *list, snode_t *node)
 {
-    z_snode_next_set(node, sys_slist_peek_head(list));
+    z_snode_next_set(node, slist_peek_head(list));
     z_slist_head_set(list, node);
 
-    if (sys_slist_peek_tail(list) == NULL) {
-        z_slist_tail_set(list, sys_slist_peek_head(list));
+    if (slist_peek_tail(list) == NULL) {
+        z_slist_tail_set(list, slist_peek_head(list));
     }
 }
 
 /**
  * @brief Append a node to the given list
  *
- * This and other sys_slist_*() functions are not thread safe.
+ * This and other slist_*() functions are not thread safe.
  *
  * @param list A pointer on the list to affect
  * @param node A pointer on the node to append
  */
-static inline void sys_slist_append(sys_slist_t *list, sys_snode_t *node)
+static inline void slist_append(slist_t *list, snode_t *node)
 {
     z_snode_next_set(node, NULL);
 
-    if (sys_slist_peek_tail(list) == NULL) {
+    if (slist_peek_tail(list) == NULL) {
         z_slist_tail_set(list, node);
         z_slist_head_set(list, node);
     } else {
-        z_snode_next_set(sys_slist_peek_tail(list), node);
+        z_snode_next_set(slist_peek_tail(list), node);
         z_slist_tail_set(list, node);
     }
 }
@@ -336,7 +336,7 @@ static inline void sys_slist_append(sys_slist_t *list, sys_snode_t *node)
  *
  * Append a singly-linked, NULL-terminated list consisting of nodes containing
  * the pointer to the next node as the first element of a node, to @a list.
- * This and other sys_slist_*() functions are not thread safe.
+ * This and other slist_*() functions are not thread safe.
  *
  * FIXME: Why are the element parameters void *?
  *
@@ -344,15 +344,15 @@ static inline void sys_slist_append(sys_slist_t *list, sys_snode_t *node)
  * @param head A pointer to the first element of the list to append
  * @param tail A pointer to the last element of the list to append
  */
-static inline void sys_slist_append_list(sys_slist_t *list, void *head, void *tail)
+static inline void slist_append_list(slist_t *list, void *head, void *tail)
 {
     if (head != NULL && tail != NULL) {
-        if (sys_slist_peek_tail(list) == NULL) {
-            z_slist_head_set(list, (sys_snode_t *)head);
+        if (slist_peek_tail(list) == NULL) {
+            z_slist_head_set(list, (snode_t *)head);
         } else {
-            z_snode_next_set(sys_slist_peek_tail(list), (sys_snode_t *)head);
+            z_snode_next_set(slist_peek_tail(list), (snode_t *)head);
         }
-        z_slist_tail_set(list, (sys_snode_t *)tail);
+        z_slist_tail_set(list, (snode_t *)tail);
     }
 }
 
@@ -360,35 +360,35 @@ static inline void sys_slist_append_list(sys_slist_t *list, void *head, void *ta
  * @brief merge two slists, appending the second one to the first
  *
  * When the operation is completed, the appending list is empty.
- * This and other sys_slist_*() functions are not thread safe.
+ * This and other slist_*() functions are not thread safe.
  *
  * @param list A pointer on the list to affect
  * @param list_to_append A pointer to the list to append.
  */
-static inline void sys_slist_merge_slist(sys_slist_t *list, sys_slist_t *list_to_append)
+static inline void slist_merge_slist(slist_t *list, slist_t *list_to_append)
 {
-    sys_snode_t *head, *tail;
-    head = sys_slist_peek_head(list_to_append);
-    tail = sys_slist_peek_tail(list_to_append);
-    sys_slist_append_list(list, head, tail);
-    sys_slist_init(list_to_append);
+    snode_t *head, *tail;
+    head = slist_peek_head(list_to_append);
+    tail = slist_peek_tail(list_to_append);
+    slist_append_list(list, head, tail);
+    slist_init(list_to_append);
 }
 
 /**
  * @brief Insert a node to the given list
  *
- * This and other sys_slist_*() functions are not thread safe.
+ * This and other slist_*() functions are not thread safe.
  *
  * @param list A pointer on the list to affect
  * @param prev A pointer on the previous node
  * @param node A pointer on the node to insert
  */
-static inline void sys_slist_insert(sys_slist_t *list, sys_snode_t *prev, sys_snode_t *node)
+static inline void slist_insert(slist_t *list, snode_t *prev, snode_t *node)
 {
     if (prev == NULL) {
-        sys_slist_prepend(list, node);
+        slist_prepend(list, node);
     } else if (z_snode_next_peek(prev) == NULL) {
-        sys_slist_append(list, node);
+        slist_append(list, node);
     } else {
         z_snode_next_set(node, z_snode_next_peek(prev));
         z_snode_next_set(prev, node);
@@ -399,19 +399,19 @@ static inline void sys_slist_insert(sys_slist_t *list, sys_snode_t *prev, sys_sn
  * @brief Fetch and remove the first node of the given list
  *
  * List must be known to be non-empty.
- * This and other sys_slist_*() functions are not thread safe.
+ * This and other slist_*() functions are not thread safe.
  *
  * @param list A pointer on the list to affect
  *
  * @return A pointer to the first node of the list
  */
-static inline sys_snode_t *sys_slist_get_not_empty(sys_slist_t *list)
+static inline snode_t *slist_get_not_empty(slist_t *list)
 {
-    sys_snode_t *node = sys_slist_peek_head(list);
+    snode_t *node = slist_peek_head(list);
 
     z_slist_head_set(list, z_snode_next_peek(node));
-    if (sys_slist_peek_tail(list) == node) {
-        z_slist_tail_set(list, sys_slist_peek_head(list));
+    if (slist_peek_tail(list) == node) {
+        z_slist_tail_set(list, slist_peek_head(list));
     }
 
     return node;
@@ -420,41 +420,41 @@ static inline sys_snode_t *sys_slist_get_not_empty(sys_slist_t *list)
 /**
  * @brief Fetch and remove the first node of the given list
  *
- * This and other sys_slist_*() functions are not thread safe.
+ * This and other slist_*() functions are not thread safe.
  *
  * @param list A pointer on the list to affect
  *
  * @return A pointer to the first node of the list (or NULL if empty)
  */
-static inline sys_snode_t *sys_slist_get(sys_slist_t *list)
+static inline snode_t *slist_get(slist_t *list)
 {
-    return sys_slist_is_empty(list) ? NULL : sys_slist_get_not_empty(list);
+    return slist_is_empty(list) ? NULL : slist_get_not_empty(list);
 }
 
 /**
  * @brief Remove a node
  *
- * This and other sys_slist_*() functions are not thread safe.
+ * This and other slist_*() functions are not thread safe.
  *
  * @param list A pointer on the list to affect
  * @param prev_node A pointer on the previous node
  *        (can be NULL, which means the node is the list's head)
  * @param node A pointer on the node to remove
  */
-static inline void sys_slist_remove(sys_slist_t *list, sys_snode_t *prev_node, sys_snode_t *node)
+static inline void slist_remove(slist_t *list, snode_t *prev_node, snode_t *node)
 {
     if (prev_node == NULL) {
         z_slist_head_set(list, z_snode_next_peek(node));
 
         /* Was node also the tail? */
-        if (sys_slist_peek_tail(list) == node) {
-            z_slist_tail_set(list, sys_slist_peek_head(list));
+        if (slist_peek_tail(list) == node) {
+            z_slist_tail_set(list, slist_peek_head(list));
         }
     } else {
         z_snode_next_set(prev_node, z_snode_next_peek(node));
 
         /* Was node the tail? */
-        if (sys_slist_peek_tail(list) == node) {
+        if (slist_peek_tail(list) == node) {
             z_slist_tail_set(list, prev_node);
         }
     }
@@ -465,21 +465,21 @@ static inline void sys_slist_remove(sys_slist_t *list, sys_snode_t *prev_node, s
 /**
  * @brief Find and remove a node from a list
  *
- * This and other sys_slist_*() functions are not thread safe.
+ * This and other slist_*() functions are not thread safe.
  *
  * @param list A pointer on the list to affect
  * @param node A pointer on the node to remove from the list
  *
  * @return true if node was removed
  */
-static inline bool sys_slist_find_and_remove(sys_slist_t *list, sys_snode_t *node)
+static inline bool slist_find_and_remove(slist_t *list, snode_t *node)
 {
-    sys_snode_t *prev = NULL;
-    sys_snode_t *test;
+    snode_t *prev = NULL;
+    snode_t *test;
 
-    SYS_SLIST_FOR_EACH_NODE(list, test) {
+    SLIST_FOR_EACH_NODE(list, test) {
         if (test == node) {
-            sys_slist_remove(list, prev, node);
+            slist_remove(list, prev, node);
             return true;
         }
 
