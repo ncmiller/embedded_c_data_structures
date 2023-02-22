@@ -21,6 +21,12 @@ add a line to the copyright section, for example:
   */
 ```
 
+| File | Description |
+| --- | --- |
+| slist.h | An intrusive single-linked list |
+| dlist.h | An intrusive double-linked list |
+| ringbuf.h | A circular FIFO queue, lock-free for single-producer, single-consumer usage |
+
 ## slist
 
 An intrusive single-linked list (header-file only).
@@ -131,3 +137,72 @@ just replace `slist` with `dlist` and `snode` with `dnode` throughout.
 See the
 [Zephyr RTOS double-linked list documentation](https://docs.zephyrproject.org/3.3.0/kernel/data_structures/dlist.html)
 for more information.
+
+## ringbuf
+
+A ring buffer (aka circular FIFO queue).
+
+This was [copied from golioth-firmware-sdk](https://raw.githubusercontent.com/golioth/golioth-firmware-sdk/v0.5.0/src/priv_include/golioth_ringbuf.h)
+and modified to be header-file only.
+
+This is thread-safe and lock-free for single-producer, single-consumer usage.
+Otherwise, it is not thread-safe.
+
+| Operation | Time Complexity |
+| --- | --- |
+| put() | O(1) |
+| get() | O(1) |
+| peek() | O(1) |
+| reset() | O(1) |
+| size() | O(1) |
+
+Example code:
+
+```c
+#include "ringbuf.h"
+#include <stdio.h>
+
+struct my_container {
+    int my_data;
+};
+
+int main(void) {
+    // Create ringbuf that can store up to 8 instances of struct my_container.
+    //
+    // This will define two variables in the current scope:
+    //
+    // uint8_t my_ringbuf_buffer[sizeof(struct my_container) * 9];
+    // ringbuf_t my_ringbuf;
+    //
+    // Note that the array is sized to contain one more item (8 + 1) than the
+    // user requests, for internal implementation reasons.
+    RINGBUF_DEFINE_AND_INIT(my_ringbuf, sizeof(struct my_container), 8);
+
+    struct my_container a = { 1 };
+    struct my_container b = { 2 };
+    struct my_container c = { 3 };
+
+    // Add items to the ringbuf
+    ringbuf_put(&my_ringbuf, &a);
+    ringbuf_put(&my_ringbuf, &b);
+    ringbuf_put(&my_ringbuf, &c);
+
+    printf("size = %zd\n", ringbuf_size(&my_ringbuf));
+    // prints:
+    //   "size = 3"
+
+    // Get oldest item
+    struct my_container the_item;
+    ringbuf_get(&my_ringbuf, &the_item);
+
+    printf("my_data = %d\n", the_item.my_data);
+    // prints:
+    //   "my_data = 1"
+
+    printf("size = %zd\n", ringbuf_size(&my_ringbuf));
+    // prints:
+    //   "size = 2"
+}
+```
+
+For more examples, see [test/test_ringbuf.c](test/test_ringbuf.c).
