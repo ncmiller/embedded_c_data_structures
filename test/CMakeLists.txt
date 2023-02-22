@@ -5,6 +5,7 @@ enable_testing()
 
 list(APPEND tests
     test_slist
+    test_dlist
 )
 
 foreach(test ${tests})
