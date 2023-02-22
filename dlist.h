@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2015 Wind River Systems, Inc.
+ * Copyright (c) 2023 Nick Miller
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -17,12 +18,11 @@
  * simplifies the adding and removing of nodes to/from the list.
  */
 
-#ifndef ZEPHYR_INCLUDE_SYS_DLIST_H_
-#define ZEPHYR_INCLUDE_SYS_DLIST_H_
+#pragma once
 
+#include "util.h"
 #include <stddef.h>
 #include <stdbool.h>
-#include <zephyr/toolchain.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -530,5 +530,3 @@ static inline sys_dnode_t *sys_dlist_get(sys_dlist_t *list)
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* ZEPHYR_INCLUDE_SYS_DLIST_H_ */
