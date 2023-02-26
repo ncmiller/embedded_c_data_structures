@@ -186,11 +186,12 @@ synchronization primitives.
 Simplified API:
 
 ```c
-void rb_init(struct rbtree *tree, rb_lessthan_t lessthan_fn);
+void rb_init(struct rbtree *tree, rb_cmp_t compare_fn);
 void rb_insert(rbtree_t *tree, rbnode_t *node);
 void rb_remove(rbtree_t *tree, rbnode_t *node);
 rbnode_t *rb_get_min(rbtree_t *tree);
 rbnode_t *rb_get_max(rbtree_t *tree);
+rbnode_t *rb_find(rbtree_t *tree, rbnode_t* *query);
 bool rb_contains(rbtree_t *tree, rbnode_t *node);
 #define RB_FOR_EACH_CONTAINER(tree, node, field)
 ```
@@ -199,36 +200,40 @@ bool rb_contains(rbtree_t *tree, rbnode_t *node);
 | --- | --- |
 | insert() | O(lg n) |
 | remove() | O(lg n) |
-| search() | O(lg n) |
+| find() | O(lg n) |
 
-Example code:
+Example code, using an rbtree as a key-value dictionary:
 
 ```c
 #include "rbtree.h"
 
 // Add a rbnode_t to your struct to make it possible to use in a rbtree
 struct my_container {
-    int my_data;
+    int key;
+    int value;
     rbnode_t node;
 };
 
-bool my_container_less_than(rbnode_t *a, rbnode_t *b) {
+// Comparison function, should return:
+//    <0 if a < b
+//    0  if a == b
+//    >0 if a > b
+int my_container_cmp(rbnode_t *a, rbnode_t *b) {
     // Get pointer to the struct containing a and b (i.e. struct my_container)
     struct my_container *cont_a = CONTAINER_OF(a, struct my_container, node);
     struct my_container *cont_b = CONTAINER_OF(b, struct my_container, node);
-
-    return cont_a->my_data < cont_b->my_data;
+    return cont_a->key - cont_b->key;
 }
 
-int main(void) {
-    struct my_container a = { .my_data = 75 };
-    struct my_container b = { .my_data = 13 };
-    struct my_container c = { .my_data = 1 };
-    struct my_container d = { .my_data = 56 };
+int rbtree(void) {
+    struct my_container a = { .key = 75, .value = 76 };
+    struct my_container b = { .key = 13, .value = 14 };
+    struct my_container c = { .key = 1, .value = 99 };
+    struct my_container d = { .key = 56, .value = 17 };
 
     // Create and initialize a rbtree
     rbtree_t my_rbtree;
-    rb_init(&my_rbtree, my_container_less_than);
+    rb_init(&my_rbtree, my_container_cmp);
 
     // Add items to the rbtree
     rb_insert(&my_rbtree, &a.node);
@@ -240,32 +245,40 @@ int main(void) {
     struct my_container* container;
     int count = 0;
     RB_FOR_EACH_CONTAINER(&my_rbtree, container, node) {
-        printf("item %d = %d\n", count, container->my_data);
+        printf("[%d], key %d value %d\n", count, container->key, container->value);
         count++;
     }
 
     // prints:
     //
-    // item 0 = 1
-    // item 1 = 13
-    // item 2 = 56
-    // item 3 = 75
+    // [0], key 1 value 99
+    // [1], key 13 value 14
+    // [2], key 56 value 17
+    // [3], key 75 value 76
 
-    // Remove container b from the rbtree
-    rb_remove(&my_rbtree, &b.node);
+    // Find a item with key == 13
+    struct my_container query = { .key = 13 };
+    rbnode_t* found = rb_find(&my_rbtree, &query.node);
+
+    // Print and remove the item just found
+    if (found) {
+        struct my_container *found_item = CONTAINER_OF(found, struct my_container, node);
+        printf("found key %d, value = %d\n", found_item->key, found_item->value);
+        rb_remove(&my_rbtree, found);
+    }
 
     // Iterate over the rbtree again
     count = 0;
     RB_FOR_EACH_CONTAINER(&my_rbtree, container, node) {
-        printf("item %d = %d\n", count, container->my_data);
+        printf("[%d], key %d value %d\n", count, container->key, container->value);
         count++;
     }
 
     // prints:
     //
-    // item 0 = 1
-    // item 1 = 56
-    // item 2 = 75
+    // [0], key 1 value 99
+    // [1], key 56 value 17
+    // [2], key 75 value 76
 }
 ```
 

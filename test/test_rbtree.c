@@ -50,15 +50,15 @@ int node_index(struct rbnode *n)
     return (int)(n - &nodes[0]);
 }
 
-/* Our "lessthan" is just the location of the struct */
-bool node_lessthan(struct rbnode *a, struct rbnode *b)
+/* Our "cmp" is just the location of the struct */
+int node_cmp(struct rbnode *a, struct rbnode *b)
 {
     if (current_insertee) {
         assert(a == current_insertee);
         assert(b != current_insertee);
     }
 
-    return a < b;
+    return (a > b) - (a < b);
 }
 
 /* Simple LCRNG (modulus is 2^64!) cribbed from:
@@ -103,9 +103,9 @@ int check_rbnode(struct rbnode *node, int blacks_above)
         if (ch) {
             /* Basic tree requirement */
             if (side == 0) {
-                _CHECK(node_lessthan(ch, node));
+                _CHECK(node_cmp(ch, node) < 0);
             } else {
-                _CHECK(node_lessthan(node, ch));
+                _CHECK(node_cmp(node, ch) < 0);
             }
 
             /* Can't have adjacent red nodes */
@@ -154,7 +154,7 @@ int _check_tree(int size)
         ni = node_index(n);
 
         if (last) {
-            _CHECK(node_lessthan(last, n));
+            _CHECK(node_cmp(last, n) < 0);
         }
 
         _CHECK(get_node_mask(ni));
@@ -202,8 +202,8 @@ void test_tree(int size)
     /* Small trees get checked after every op, big trees less often */
     int small_tree = size <= 32;
 
-    (void)memset(&tree, 0, sizeof(tree));
-    tree.lessthan_fn = node_lessthan;
+    rb_init(&tree, node_cmp);
+
     (void)memset(nodes, 0, sizeof(nodes));
     (void)memset(node_mask, 0, sizeof(node_mask));
 
@@ -264,7 +264,7 @@ static int test_rb_get_minmax(void)
     struct rbnode temp = {0};
 
     /* initialize tree */
-    rb_init(&tree, node_lessthan);
+    rb_init(&tree, node_cmp);
     (void)memset(nodes, 0, sizeof(nodes));
 
     CHECK_TRUE(rb_get_min(&tree) == NULL, "the tree is invalid");
@@ -282,8 +282,58 @@ static int test_rb_get_minmax(void)
     return 0;
 }
 
+struct my_container {
+    int key;
+    int value;
+    rbnode_t node;
+};
+
+int my_container_cmp(rbnode_t *a, rbnode_t *b) {
+    struct my_container *cont_a = CONTAINER_OF(a, struct my_container, node);
+    struct my_container *cont_b = CONTAINER_OF(b, struct my_container, node);
+    return cont_a->key - cont_b->key;
+}
+
+static int test_rb_find(void)
+{
+    struct my_container a = { .key = 75, .value = 76 };
+    struct my_container b = { .key = 13, .value = 14 };
+    struct my_container c = { .key = 1, .value = 99 };
+    struct my_container d = { .key = 56, .value = 17 };
+
+    // Create and initialize a rbtree
+    rbtree_t my_rbtree;
+    rb_init(&my_rbtree, my_container_cmp);
+
+    // Add items to the rbtree
+    rb_insert(&my_rbtree, &a.node);
+    rb_insert(&my_rbtree, &b.node);
+    rb_insert(&my_rbtree, &c.node);
+    rb_insert(&my_rbtree, &d.node);
+
+    // Find a item with key == 13
+    struct my_container query = { .key = 13 };
+    rbnode_t* found = rb_find(&my_rbtree, &query.node);
+    _CHECK(found != NULL);
+
+    if (found) {
+        struct my_container *found_item = CONTAINER_OF(found, struct my_container, node);
+        _CHECK(found_item->key == 13);
+        _CHECK(found_item->value == 14);
+        // remove the item just found
+        rb_remove(&my_rbtree, found);
+    }
+
+    // Try to find key 13 again, should fail, return NULL
+    found = rb_find(&my_rbtree, &query.node);
+    _CHECK(found == NULL);
+
+    return 0;
+}
+
 int main(void) {
     RETURN_IF_NONZERO(test_rb_get_minmax());
     RETURN_IF_NONZERO(test_rbtree_spam());
+    RETURN_IF_NONZERO(test_rb_find());
     return 0;
 }

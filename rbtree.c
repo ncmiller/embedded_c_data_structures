@@ -19,6 +19,11 @@
 
 enum rb_color { RED = 0U, BLACK = 1U };
 
+static bool lessthan(struct rbtree *tree, struct rbnode *a, struct rbnode *b)
+{
+    return tree->cmp_fn(a, b) < 0;
+}
+
 static struct rbnode *get_child(struct rbnode *n, uint8_t side)
 {
     CHECK(n);
@@ -85,7 +90,7 @@ static int find_and_stack(struct rbtree *tree, struct rbnode *node,
     stack[sz++] = tree->root;
 
     while (stack[sz - 1] != node) {
-        uint8_t side = tree->lessthan_fn(node, stack[sz - 1]) ? 0U : 1U;
+        uint8_t side = lessthan(tree, node, stack[sz - 1]) ? 0U : 1U;
         struct rbnode *ch = get_child(stack[sz - 1], side);
 
         if (ch != NULL) {
@@ -233,7 +238,7 @@ void rb_insert(struct rbtree *tree, struct rbnode *node)
 
     struct rbnode *parent = stack[stacksz - 1];
 
-    uint8_t side = tree->lessthan_fn(node, parent) ? 0U : 1U;
+    uint8_t side = lessthan(tree, node, parent) ? 0U : 1U;
 
     set_child(parent, side, node);
     set_color(node, RED);
@@ -361,10 +366,10 @@ static void fix_missing_black(struct rbnode **stack, int stacksz,
     }
 }
 
-void rb_init(struct rbtree *tree, rb_lessthan_t lessthan_fn)
+void rb_init(struct rbtree *tree, rb_cmp_t cmp_fn)
 {
     memset(tree, 0, sizeof(*tree));
-    tree->lessthan_fn = lessthan_fn;
+    tree->cmp_fn = cmp_fn;
 }
 
 void rb_remove(struct rbtree *tree, struct rbnode *node)
@@ -507,10 +512,21 @@ bool rb_contains(struct rbtree *tree, struct rbnode *node)
     struct rbnode *n = tree->root;
 
     while ((n != NULL) && (n != node)) {
-        n = get_child(n, tree->lessthan_fn(n, node));
+        n = get_child(n, lessthan(tree, n, node));
     }
 
     return n == node;
+}
+
+struct rbnode *rb_find(struct rbtree *tree, struct rbnode *query)
+{
+    struct rbnode *n = tree->root;
+
+    while ((n != NULL) && (tree->cmp_fn(n, query) != 0)) {
+        n = get_child(n, lessthan(tree, n, query));
+    }
+
+    return ((n != NULL) && tree->cmp_fn(n, query) == 0 ? n : NULL);
 }
 
 /* Pushes the node and its chain of left-side children onto the stack

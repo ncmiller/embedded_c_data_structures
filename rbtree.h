@@ -56,12 +56,15 @@ typedef struct rbnode rbnode_t;
  * @ingroup datastructure_apis
  * @{
  */
+
 /**
- * @typedef rb_lessthan_t
- * @brief Red/black tree comparison predicate
+ * @typedef rb_cmp_t
+ * @brief Red/black tree comparison function
  *
- * Compares the two nodes and returns true if node A is strictly less
- * than B according to the tree's sorting criteria, false otherwise.
+ * Compares the two nodes and returns:
+ *      <0: if A < B
+ *       0: if A == B
+ *      >0: if A > B
  *
  * Note that during insert, the new node being inserted will always be
  * "A", where "B" is the existing node within the tree against which
@@ -69,11 +72,19 @@ typedef struct rbnode rbnode_t;
  * implement "most/least recently added" semantics between nodes which
  * would otherwise compare as equal.
  */
-typedef bool (*rb_lessthan_t)(struct rbnode *a, struct rbnode *b);
+typedef int (*rb_cmp_t)(struct rbnode *a, struct rbnode *b);
+
+/**
+ * @typedef rb_equal_t
+ * @brief Red/black tree equality predicate
+ *
+ * Compares the two nodes and returns true if node A is equal to B.
+ */
+typedef bool (*rb_equal_t)(struct rbnode *a, struct rbnode *b);
 
 struct rbtree {
     struct rbnode *root;
-    rb_lessthan_t lessthan_fn;
+    rb_cmp_t cmp_fn;
     int max_depth;
     struct rbnode *iter_stack[Z_MAX_RBTREE_DEPTH];
     unsigned char iter_left[Z_MAX_RBTREE_DEPTH];
@@ -90,7 +101,7 @@ struct rbnode *z_rb_get_minmax(struct rbtree *tree, uint8_t side);
 /**
  * @brief Initialize a tree
  */
-void rb_init(struct rbtree *tree, rb_lessthan_t lessthan_fn);
+void rb_init(struct rbtree *tree, rb_cmp_t cmp_fn);
 
 /**
  * @brief Insert node into tree
@@ -122,12 +133,17 @@ static inline struct rbnode *rb_get_max(struct rbtree *tree)
  * @brief Returns true if the given node is part of the tree
  *
  * Note that this does not internally dereference the node pointer
- * (though the tree's lessthan callback might!), it just tests it for
+ * (though the tree's cmp callback might!), it just tests it for
  * equality with items in the tree.  So it's feasible to use this to
  * implement a "set" construct by simply testing the pointer value
  * itself.
  */
 bool rb_contains(struct rbtree *tree, struct rbnode *node);
+
+/**
+ * @brief Finds a query node in a tree in O(lg n), or NULL if not found.
+ */
+struct rbnode *rb_find(struct rbtree *tree, struct rbnode *query);
 
 struct _rb_foreach {
     struct rbnode **stack;
