@@ -38,6 +38,8 @@ struct rbnode {
     struct rbnode *children[2];
 };
 
+typedef struct rbnode rbnode_t;
+
 /* Theoretical maximum depth of tree based on pointer size. If memory
  * is filled with 2-pointer nodes, and the tree can be twice as a
  * packed binary tree, plus root...  Works out to 59 entries for 32
@@ -75,6 +77,8 @@ struct rbtree {
     struct rbnode *iter_stack[Z_MAX_RBTREE_DEPTH];
     unsigned char iter_left[Z_MAX_RBTREE_DEPTH];
 };
+
+typedef struct rbtree rbtree_t;
 
 typedef void (*rb_visit_t)(struct rbnode *node, void *cookie);
 

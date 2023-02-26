@@ -15,18 +15,18 @@
 
 #define MAX_NODES 256
 
-static struct rbtree tree;
+static rbtree_t tree;
 
-static struct rbnode nodes[MAX_NODES];
+static rbnode_t nodes[MAX_NODES];
 
 /* Bit is set if node is in the tree */
 static unsigned int node_mask[(MAX_NODES + 31)/32];
 
 /* Array of nodes dumped via rb_walk */
-static struct rbnode *walked_nodes[MAX_NODES];
+static rbnode_t *walked_nodes[MAX_NODES];
 
 /* Node currently being inserted, for testing lessthan() argument order */
-static struct rbnode *current_insertee;
+static rbnode_t *current_insertee;
 
 void set_node_mask(int node, int val)
 {
