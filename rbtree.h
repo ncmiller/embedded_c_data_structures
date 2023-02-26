@@ -33,6 +33,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "util.h"
 
 struct rbnode {
     struct rbnode *children[2];
@@ -85,6 +86,11 @@ typedef void (*rb_visit_t)(struct rbnode *node, void *cookie);
 struct rbnode *z_rb_child(struct rbnode *node, uint8_t side);
 int z_rb_is_black(struct rbnode *node);
 struct rbnode *z_rb_get_minmax(struct rbtree *tree, uint8_t side);
+
+/**
+ * @brief Initialize a tree
+ */
+void rb_init(struct rbtree *tree, rb_lessthan_t lessthan_fn);
 
 /**
  * @brief Insert node into tree

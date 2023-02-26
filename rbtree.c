@@ -12,6 +12,7 @@
  */
 #include "rbtree.h"
 #include <stdbool.h>
+#include <string.h> // memset
 #include <assert.h>
 
 #define CHECK(n) assert(n)
@@ -358,6 +359,12 @@ static void fix_missing_black(struct rbnode **stack, int stacksz,
         }
         return;
     }
+}
+
+void rb_init(struct rbtree *tree, rb_lessthan_t lessthan_fn)
+{
+    memset(tree, 0, sizeof(*tree));
+    tree->lessthan_fn = lessthan_fn;
 }
 
 void rb_remove(struct rbtree *tree, struct rbnode *node)

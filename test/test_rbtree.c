@@ -263,9 +263,8 @@ static int test_rb_get_minmax(void)
 {
     struct rbnode temp = {0};
 
-    /* Initialize a tree and insert it */
-    (void)memset(&tree, 0, sizeof(tree));
-    tree.lessthan_fn = node_lessthan;
+    /* initialize tree */
+    rb_init(&tree, node_lessthan);
     (void)memset(nodes, 0, sizeof(nodes));
 
     CHECK_TRUE(rb_get_min(&tree) == NULL, "the tree is invalid");
