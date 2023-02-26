@@ -1,10 +1,21 @@
 # embedded_c_data_structures
 
-Minimal header-file-only data structures which can be useful on
+Minimal drop-in libraries for data structures which can be useful on
 embedded systems.
 
-All memory required for these data structures is allocated by the user.
-There are no restrictions on how the user allocates the data structure.
+All libraries have the following properties:
+
+* No dependencies except a small subset of libc (e.g. memset)
+* No dynamic memory allocations
+* No I/O (e.g. stdio.h)
+* No build system required. Simply copy the .h/.c to your project.
+
+Most of these were copied from
+[Zephyr RTOS](https://github.com/zephyrproject-rtos/zephyr)
+and adapted to remove Zephyr-specific dependencies.
+
+All memory required for these data structures is allocated by the user,
+and lifetime is managed by the user.
 This can be useful in embedded environments where dynamic memory allocation
 is forbidden or discouraged.
 
@@ -32,6 +43,9 @@ add a line to the copyright section, for example:
 
 An intrusive single-linked list (header-file only).
 
+This is a flexible data structure that can also be used as a
+queue (by using slist_append()) or stack (by using slist_prepend()).
+
 This was [copied from zephyrrtos](https://github.com/zephyrproject-rtos/zephyr/blob/zephyr-v3.3.0/include/zephyr/sys/slist.h)
 and modified to be a standalone module with no dependencies on zephyrrtos.
 
@@ -41,13 +55,29 @@ synchronization primitives.
 The struct `snode_t` contains only a single pointer. The struct `slist_t`
 contains only two pointers (head and tail).
 
+Simplified API:
+
+```c
+void slist_init(slist_t *list);
+void slist_insert(slist_t *list, snode_t *prev, snode_t *node);
+bool slist_find_and_remove(slist_t *list, snode_t *node);
+void slist_prepend(slist_t *list, snode_t *node);
+void slist_append(slist_t *list, snode_t *node);
+snode_t *slist_peek_head(slist_t *list);
+snode_t *slist_peek_tail(slist_t *list);
+snode_t *slist_get(slist_t *list);
+bool slist_is_empty(slist_t *list);
+#define SLIST_FOR_EACH_CONTAINER(slist, container, node)
+```
+
 | Operation | Time Complexity |
 | --- | --- |
-| Access head/tail | O(1) |
-| Insert before head, after tail | O(1) |
-| Insert in middle | O(N), requires prev pointer |
-| Remove head | O(1) |
-| Remove non-head nodes | O(N), requires prev pointer |
+| peek_head()/peek_tail() | O(1) |
+| append()/prepend() | O(1) |
+| search() | O(N) |
+| insert() | O(N), requires prev pointer |
+| remove() | O(N), requires prev pointer |
+| get() | O(1) |
 
 Example code:
 
@@ -126,11 +156,12 @@ synchronization primitives.
 
 | Operation | Time Complexity |
 | --- | --- |
-| Access head/tail | O(1) |
-| Insert before head, after tail | O(1) |
-| Insert in middle | O(1) |
-| Remove head | O(1) |
-| Remove non-head nodes | O(1) |
+| peek_head()/peek_tail() | O(1) |
+| append()/prepend() | O(1) |
+| search() | O(N) |
+| insert() | O(1) |
+| remove() | O(1) |
+| get() | O(1) |
 
 Example code is omitted for brevity. It's exactly the same as slist,
 just replace `slist` with `dlist` and `snode` with `dnode` throughout.
@@ -152,12 +183,6 @@ and modified to be a standalone module with no dependencies on zephyrrtos.
 This is not thread-safe. If used across threads, be sure to protect with
 synchronization primitives.
 
-| Operation | Time Complexity |
-| --- | --- |
-| insert() | O(lg n) |
-| remove() | O(lg n) |
-| search() | O(lg n) |
-
 Simplified API:
 
 ```c
@@ -169,6 +194,12 @@ rbnode_t *rb_get_max(rbtree_t *tree);
 bool rb_contains(rbtree_t *tree, rbnode_t *node);
 #define RB_FOR_EACH_CONTAINER(tree, node, field)
 ```
+
+| Operation | Time Complexity |
+| --- | --- |
+| insert() | O(lg n) |
+| remove() | O(lg n) |
+| search() | O(lg n) |
 
 Example code:
 
@@ -190,10 +221,10 @@ bool my_container_less_than(rbnode_t *a, rbnode_t *b) {
 }
 
 int main(void) {
-    struct my_container_rb a = { .my_data = 75 };
-    struct my_container_rb b = { .my_data = 13 };
-    struct my_container_rb c = { .my_data = 1 };
-    struct my_container_rb d = { .my_data = 56 };
+    struct my_container a = { .my_data = 75 };
+    struct my_container b = { .my_data = 13 };
+    struct my_container c = { .my_data = 1 };
+    struct my_container d = { .my_data = 56 };
 
     // Create and initialize a rbtree
     rbtree_t my_rbtree;
@@ -206,7 +237,7 @@ int main(void) {
     rb_insert(&my_rbtree, &d.node);
 
     // In-order traversal of rbtree, smallest to largest
-    struct my_container_rb* container;
+    struct my_container* container;
     int count = 0;
     RB_FOR_EACH_CONTAINER(&my_rbtree, container, node) {
         printf("item %d = %d\n", count, container->my_data);
@@ -252,13 +283,26 @@ and modified to be header-file only.
 This is thread-safe and lock-free for single-producer, single-consumer usage.
 Otherwise, it is not thread-safe.
 
+Simplified API:
+
+```c
+#define RINGBUF_DEFINE_AND_INIT(name, item_sz, max_num_items)
+bool ringbuf_put(ringbuf_t* ringbuf, const void* item);
+bool ringbuf_get(ringbuf_t* ringbuf, void* item);
+bool ringbuf_peek(ringbuf_t* ringbuf, void* item);
+size_t ringbuf_capacity(const ringbuf_t* ringbuf);
+size_t ringbuf_size(const ringbuf_t* ringbuf);
+bool ringbuf_is_empty(const ringbuf_t* ringbuf);
+bool ringbuf_is_full(const ringbuf_t* ringbuf);
+void ringbuf_reset(ringbuf_t* ringbuf);
+```
+
 | Operation | Time Complexity |
 | --- | --- |
 | put() | O(1) |
 | get() | O(1) |
-| peek() | O(1) |
-| reset() | O(1) |
 | size() | O(1) |
+| reset() | O(1) |
 
 Example code:
 
