@@ -1,15 +1,17 @@
 /*
  * Copyright (c) 2018 Intel Corporation.
+ * Copyright (c) 2023 Nick Miller
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include <zephyr/ztest.h>
-#include <zephyr/sys/rb.h>
+#include "test.h"
+#include "rbtree.h"
+#include "../rbtree.c"
+#include <assert.h>
+#include <stdio.h>
+#include <string.h> // memset
 
-#include "../../../lib/os/rb.c"
-
-#define _CHECK(n) \
-	zassert_true(!!(n), "Tree check failed: [ " #n " ] @%d", __LINE__)
+#define _CHECK(n) CHECK_TRUE(!!(n), "Tree check failed: [ " #n " ] @%d")
 
 #define MAX_NODES 256
 
@@ -52,11 +54,11 @@ int node_index(struct rbnode *n)
 bool node_lessthan(struct rbnode *a, struct rbnode *b)
 {
 	if (current_insertee) {
-		_CHECK(a == current_insertee);
-		_CHECK(b != current_insertee);
+		assert(a == current_insertee);
+		assert(b != current_insertee);
 	}
 
-	return a < b;
+        return a < b;
 }
 
 /* Simple LCRNG (modulus is 2^64!) cribbed from:
@@ -74,7 +76,7 @@ static unsigned int next_rand_mod(unsigned int mod)
 	return ((unsigned int)(state >> 32)) % mod;
 }
 
-void visit_node(struct rbnode *node, void *cookie)
+int visit_node(struct rbnode *node, void *cookie)
 {
 	int *nwalked = cookie;
 
@@ -82,6 +84,8 @@ void visit_node(struct rbnode *node, void *cookie)
 
 	walked_nodes[*nwalked] = node;
 	*nwalked += 1;
+
+        return 0;
 }
 
 /* Stores the last-seen black height at a leaf during check_rb(), or
@@ -89,7 +93,7 @@ void visit_node(struct rbnode *node, void *cookie)
  */
 static int last_black_height;
 
-void check_rbnode(struct rbnode *node, int blacks_above)
+int check_rbnode(struct rbnode *node, int blacks_above)
 {
 	int side, bheight = blacks_above + z_rb_is_black(node);
 
@@ -117,9 +121,10 @@ void check_rbnode(struct rbnode *node, int blacks_above)
 			last_black_height = bheight;
 		}
 	}
+        return 0;
 }
 
-void check_rb(void)
+int check_rb(void)
 {
 	last_black_height = 0;
 
@@ -127,25 +132,21 @@ void check_rb(void)
 	_CHECK(z_rb_is_black(tree.root));
 
 	check_rbnode(tree.root, 0);
+
+        return 0;
 }
 
-/* First validates the external API behavior via a walk, then checks
- * interior tree and red/black state via internal APIs.
- */
-void _check_tree(int size, int use_foreach)
+/* Checks interior tree and red/black state via internal APIs. */
+int _check_tree(int size)
 {
 	int nwalked = 0, i, ni;
 	struct rbnode *n, *last = NULL;
 
 	(void)memset(walked_nodes, 0, sizeof(walked_nodes));
 
-	if (use_foreach) {
-		RB_FOR_EACH(&tree, n) {
-			visit_node(n, &nwalked);
-		}
-	} else {
-		rb_walk(&tree, visit_node, &nwalked);
-	}
+        RB_FOR_EACH(&tree, n) {
+                visit_node(n, &nwalked);
+        }
 
 	/* Make sure all found nodes are in-order and marked in the tree */
 	for (i = 0; i < nwalked; i++) {
@@ -177,13 +178,14 @@ void _check_tree(int size, int use_foreach)
 	if (tree.root) {
 		check_rb();
 	}
+
+        return 0;
 }
 
-void check_tree(int size)
+int check_tree(int size)
 {
-	/* Do it with both enumeration mechanisms */
-	_check_tree(size, 0);
-	_check_tree(size, 1);
+	_check_tree(size);
+        return 0;
 }
 
 void checked_insert(struct rbtree *tree, struct rbnode *node)
@@ -228,7 +230,7 @@ void test_tree(int size)
 	}
 }
 
-ZTEST(rbtree_api, test_rbtree_spam)
+static int test_rbtree_spam(void)
 {
 	int size = 1;
 
@@ -239,10 +241,12 @@ ZTEST(rbtree_api, test_rbtree_spam)
 			size = MAX_NODES;
 		}
 
-		TC_PRINT("Checking trees built from %d nodes...\n", size);
+		printf("Checking trees built from %d nodes...\n", size);
 
 		test_tree(size);
 	} while (size < MAX_NODES);
+
+        return 0;
 }
 
 /**
@@ -255,7 +259,7 @@ ZTEST(rbtree_api, test_rbtree_spam)
  *
  * @see rb_get_min(), rb_get_max()
  */
-ZTEST(rbtree_api, test_rb_get_minmax)
+static int test_rb_get_minmax(void)
 {
 	struct rbnode temp = {0};
 
@@ -264,7 +268,7 @@ ZTEST(rbtree_api, test_rb_get_minmax)
 	tree.lessthan_fn = node_lessthan;
 	(void)memset(nodes, 0, sizeof(nodes));
 
-	zassert_true(rb_get_min(&tree) == NULL, "the tree is invalid");
+	CHECK_TRUE(rb_get_min(&tree) == NULL, "the tree is invalid");
 
 	for (int i = 0; i < 8; i++) {
 		rb_insert(&tree, &nodes[i]);
@@ -273,8 +277,14 @@ ZTEST(rbtree_api, test_rb_get_minmax)
 	rb_remove(&tree, &temp);
 
 	/* Check if tree's max and min node are expected */
-	zassert_true(rb_get_min(&tree) == &nodes[0], "the tree is invalid");
-	zassert_true(rb_get_max(&tree) == &nodes[7], "the tree is invalid");
+	CHECK_TRUE(rb_get_min(&tree) == &nodes[0], "the tree is invalid");
+	CHECK_TRUE(rb_get_max(&tree) == &nodes[7], "the tree is invalid");
+
+        return 0;
 }
 
-ZTEST_SUITE(rbtree_api, NULL, NULL, NULL, NULL, NULL);
+int main(void) {
+    RETURN_IF_NONZERO(test_rb_get_minmax());
+    RETURN_IF_NONZERO(test_rbtree_spam());
+    return 0;
+}
