@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018 Intel Corporation
+ * Copyright (c) 2023 Nick Miller
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -226,11 +227,7 @@ void rb_insert(struct rbtree *tree, struct rbnode *node)
 		return;
 	}
 
-#ifdef CONFIG_MISRA_SANE
 	struct rbnode **stack = &tree->iter_stack[0];
-#else
-	struct rbnode *stack[tree->max_depth + 1];
-#endif
 
 	int stacksz = find_and_stack(tree, node, stack);
 
@@ -367,11 +364,7 @@ static void fix_missing_black(struct rbnode **stack, int stacksz,
 void rb_remove(struct rbtree *tree, struct rbnode *node)
 {
 	struct rbnode *tmp;
-#ifdef CONFIG_MISRA_SANE
 	struct rbnode **stack = &tree->iter_stack[0];
-#else
-	struct rbnode *stack[tree->max_depth + 1];
-#endif
 
 	int stacksz = find_and_stack(tree, node, stack);
 
@@ -492,17 +485,6 @@ void rb_remove(struct rbtree *tree, struct rbnode *node)
 	/* We may have rotated up into the root! */
 	tree->root = stack[0];
 }
-
-#ifndef CONFIG_MISRA_SANE
-void z_rb_walk(struct rbnode *node, rb_visit_t visit_fn, void *cookie)
-{
-	if (node != NULL) {
-		z_rb_walk(get_child(node, 0U), visit_fn, cookie);
-		visit_fn(node, cookie);
-		z_rb_walk(get_child(node, 1U), visit_fn, cookie);
-	}
-}
-#endif
 
 struct rbnode *z_rb_child(struct rbnode *node, uint8_t side)
 {
