@@ -20,7 +20,7 @@
  * The implementation is size-optimized to prioritize runtime memory
  * usage.  The data structure is intrusive, which is to say the struct
  * rbnode handle is intended to be placed in a separate struct the
- * same way other such structures (e.g. Zephyr's dlist list) and
+ * same way other such structures (e.g. dlist, slist) and
  * requires no data pointer to be stored in the node.  The color bit
  * is unioned with a pointer (fairly common for such libraries).  Most
  * notably, there is no "parent" pointer stored in the node, the upper
@@ -29,8 +29,7 @@
  * just two pointers, identical with a doubly-linked list.
  */
 
-#ifndef ZEPHYR_INCLUDE_SYS_RB_H_
-#define ZEPHYR_INCLUDE_SYS_RB_H_
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -178,5 +177,3 @@ struct rbnode *z_rb_foreach_next(struct rbtree *tree, struct _rb_foreach *f);
 			 /**/)
 
 /** @} */
-
-#endif /* ZEPHYR_INCLUDE_SYS_RB_H_ */

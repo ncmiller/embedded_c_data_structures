@@ -10,12 +10,11 @@
  * checked many times per operation.  Leave them off unless you're
  * working on the rbtree code itself
  */
-#define CHECK(n) /**/
-/* #define CHECK(n) __ASSERT_NO_MSG(n) */
-
-#include <zephyr/kernel.h>
-#include <zephyr/sys/rb.h>
+#include "rbtree.h"
 #include <stdbool.h>
+#include <assert.h>
+
+#define CHECK(n) assert(n)
 
 enum rb_color { RED = 0U, BLACK = 1U };
 
@@ -476,7 +475,7 @@ void rb_remove(struct rbtree *tree, struct rbnode *node)
 		/* Check colors, if one was red (at least one must have been
 		 * black in a valid tree), then we're done.
 		 */
-		__ASSERT(is_black(node) || is_black(child), "both nodes red?!");
+		CHECK(is_black(node) || is_black(child)); /* both nodes red ?! */
 		if (is_red(node) || is_red(child)) {
 			set_color(child, BLACK);
 		}
