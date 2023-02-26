@@ -35,7 +35,7 @@
 #include <stdint.h>
 
 struct rbnode {
-	struct rbnode *children[2];
+    struct rbnode *children[2];
 };
 
 /* Theoretical maximum depth of tree based on pointer size. If memory
@@ -48,11 +48,11 @@ struct rbnode {
 #define Z_MAX_RBTREE_DEPTH (2 * (Z_PBITS(int *) - Z_TBITS(int *) - 1) + 1)
 
 
- /**
-  * @defgroup rbtree_apis Balanced Red/Black Tree
-  * @ingroup datastructure_apis
-  * @{
-  */
+/**
+ * @defgroup rbtree_apis Balanced Red/Black Tree
+ * @ingroup datastructure_apis
+ * @{
+ */
 /**
  * @typedef rb_lessthan_t
  * @brief Red/black tree comparison predicate
@@ -69,11 +69,11 @@ struct rbnode {
 typedef bool (*rb_lessthan_t)(struct rbnode *a, struct rbnode *b);
 
 struct rbtree {
-	struct rbnode *root;
-	rb_lessthan_t lessthan_fn;
-	int max_depth;
-	struct rbnode *iter_stack[Z_MAX_RBTREE_DEPTH];
-	unsigned char iter_left[Z_MAX_RBTREE_DEPTH];
+    struct rbnode *root;
+    rb_lessthan_t lessthan_fn;
+    int max_depth;
+    struct rbnode *iter_stack[Z_MAX_RBTREE_DEPTH];
+    unsigned char iter_left[Z_MAX_RBTREE_DEPTH];
 };
 
 typedef void (*rb_visit_t)(struct rbnode *node, void *cookie);
@@ -97,7 +97,7 @@ void rb_remove(struct rbtree *tree, struct rbnode *node);
  */
 static inline struct rbnode *rb_get_min(struct rbtree *tree)
 {
-	return z_rb_get_minmax(tree, 0U);
+    return z_rb_get_minmax(tree, 0U);
 }
 
 /**
@@ -105,7 +105,7 @@ static inline struct rbnode *rb_get_min(struct rbtree *tree)
  */
 static inline struct rbnode *rb_get_max(struct rbtree *tree)
 {
-	return z_rb_get_minmax(tree, 1U);
+    return z_rb_get_minmax(tree, 1U);
 }
 
 /**
@@ -120,15 +120,15 @@ static inline struct rbnode *rb_get_max(struct rbtree *tree)
 bool rb_contains(struct rbtree *tree, struct rbnode *node);
 
 struct _rb_foreach {
-	struct rbnode **stack;
-	uint8_t *is_left;
-	int32_t top;
+    struct rbnode **stack;
+    uint8_t *is_left;
+    int32_t top;
 };
 
 #define _RB_FOREACH_INIT(tree, node) {					\
-	.stack   = &(tree)->iter_stack[0],				\
-	.is_left = &(tree)->iter_left[0],				\
-	.top     = -1							\
+    .stack   = &(tree)->iter_stack[0],				\
+    .is_left = &(tree)->iter_left[0],				\
+    .top     = -1							\
 }
 
 struct rbnode *z_rb_foreach_next(struct rbtree *tree, struct _rb_foreach *f);
@@ -155,9 +155,9 @@ struct rbnode *z_rb_foreach_next(struct rbtree *tree, struct _rb_foreach *f);
  *             use as the iterator
  */
 #define RB_FOR_EACH(tree, node) \
-	for (struct _rb_foreach __f = _RB_FOREACH_INIT(tree, node);	\
-	     (node = z_rb_foreach_next(tree, &__f));			\
-	     /**/)
+    for (struct _rb_foreach __f = _RB_FOREACH_INIT(tree, node);	\
+            (node = z_rb_foreach_next(tree, &__f));			\
+            /**/)
 
 /**
  * @brief Loop over rbtree with implicit container field logic
@@ -170,10 +170,10 @@ struct rbnode *z_rb_foreach_next(struct rbtree *tree, struct _rb_foreach *f);
  * @param field The field name of a struct rbnode inside node
  */
 #define RB_FOR_EACH_CONTAINER(tree, node, field)		           \
-	for (struct _rb_foreach __f = _RB_FOREACH_INIT(tree, node);	   \
-			({struct rbnode *n = z_rb_foreach_next(tree, &__f); \
-			 node = n ? CONTAINER_OF(n, __typeof__(*(node)),   \
-					 field) : NULL; }) != NULL;        \
-			 /**/)
+    for (struct _rb_foreach __f = _RB_FOREACH_INIT(tree, node);	   \
+            ({struct rbnode *n = z_rb_foreach_next(tree, &__f); \
+             node = n ? CONTAINER_OF(n, __typeof__(*(node)),   \
+                     field) : NULL; }) != NULL;        \
+                     /**/)
 
 /** @} */
