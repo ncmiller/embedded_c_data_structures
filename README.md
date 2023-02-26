@@ -25,6 +25,7 @@ add a line to the copyright section, for example:
 | --- | --- |
 | slist.h | An intrusive single-linked list |
 | dlist.h | An intrusive double-linked list |
+| rbtree.h | An intrusive red-black tree |
 | ringbuf.h | A circular FIFO queue, lock-free for single-producer, single-consumer usage |
 
 ## slist
@@ -136,6 +137,109 @@ just replace `slist` with `dlist` and `snode` with `dnode` throughout.
 
 See the
 [Zephyr RTOS double-linked list documentation](https://docs.zephyrproject.org/3.3.0/kernel/data_structures/dlist.html)
+for more information.
+
+## rbtree
+
+An intrusive red-black tree (.h and .c file).
+
+This is a self-balancing binary search tree, which can be used in a variety
+of ways (e.g. dictionary, priority queue).
+
+This was [copied from zephyrrtos](https://github.com/zephyrproject-rtos/zephyr/blob/zephyr-v3.3.0/include/zephyr/sys/rb.h)
+and modified to be a standalone module with no dependencies on zephyrrtos.
+
+This is not thread-safe. If used across threads, be sure to protect with
+synchronization primitives.
+
+| Operation | Time Complexity |
+| --- | --- |
+| insert() | O(lg n) |
+| remove() | O(lg n) |
+| search() | O(lg n) |
+
+Simplified API:
+
+```c
+void rb_init(struct rbtree *tree, rb_lessthan_t lessthan_fn);
+void rb_insert(rbtree_t *tree, rbnode_t *node);
+void rb_remove(rbtree_t *tree, rbnode_t *node);
+rbnode_t *rb_get_min(rbtree_t *tree);
+rbnode_t *rb_get_max(rbtree_t *tree);
+bool rb_contains(rbtree_t *tree, rbnode_t *node);
+#define RB_FOR_EACH_CONTAINER(tree, node, field)
+```
+
+Example code:
+
+```c
+#include "rbtree.h"
+
+// Add a rbnode_t to your struct to make it possible to use in a rbtree
+struct my_container {
+    int my_data;
+    rbnode_t node;
+};
+
+bool my_container_less_than(rbnode_t *a, rbnode_t *b) {
+    // Get pointer to the struct containing a and b (i.e. struct my_container)
+    struct my_container *cont_a = CONTAINER_OF(a, struct my_container, node);
+    struct my_container *cont_b = CONTAINER_OF(b, struct my_container, node);
+
+    return cont_a->my_data < cont_b->my_data;
+}
+
+int main(void) {
+    struct my_container_rb a = { .my_data = 75 };
+    struct my_container_rb b = { .my_data = 13 };
+    struct my_container_rb c = { .my_data = 1 };
+    struct my_container_rb d = { .my_data = 56 };
+
+    // Create and initialize a rbtree
+    rbtree_t my_rbtree;
+    rb_init(&my_rbtree, my_container_less_than);
+
+    // Add items to the rbtree
+    rb_insert(&my_rbtree, &a.node);
+    rb_insert(&my_rbtree, &b.node);
+    rb_insert(&my_rbtree, &c.node);
+    rb_insert(&my_rbtree, &d.node);
+
+    // In-order traversal of rbtree, smallest to largest
+    struct my_container_rb* container;
+    int count = 0;
+    RB_FOR_EACH_CONTAINER(&my_rbtree, container, node) {
+        printf("item %d = %d\n", count, container->my_data);
+        count++;
+    }
+
+    // prints:
+    //
+    // item 0 = 1
+    // item 1 = 13
+    // item 2 = 56
+    // item 3 = 75
+
+    // Remove container b from the rbtree
+    rb_remove(&my_rbtree, &b.node);
+
+    // Iterate over the rbtree again
+    count = 0;
+    RB_FOR_EACH_CONTAINER(&my_rbtree, container, node) {
+        printf("item %d = %d\n", count, container->my_data);
+        count++;
+    }
+
+    // prints:
+    //
+    // item 0 = 1
+    // item 1 = 56
+    // item 2 = 75
+}
+```
+
+See the
+[Zephyr RTOS rbtree documentation](https://docs.zephyrproject.org/3.0.0/reference/data_structures/rbtree.html)
 for more information.
 
 ## ringbuf
