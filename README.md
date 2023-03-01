@@ -36,6 +36,7 @@ add a line to the copyright section, for example:
 | --- | --- |
 | slist.h | An intrusive single-linked list |
 | dlist.h | An intrusive double-linked list |
+| tree.h | A balanced binary search tree (rb tree) and a splay tree |
 | rbtree.h | An intrusive red-black tree |
 | ringbuf.h | A circular FIFO queue, lock-free for single-producer, single-consumer usage |
 
@@ -169,6 +170,140 @@ just replace `slist` with `dlist` and `snode` with `dnode` throughout.
 See the
 [Zephyr RTOS double-linked list documentation](https://docs.zephyrproject.org/3.3.0/kernel/data_structures/dlist.html)
 for more information.
+
+## tree
+
+The file `tree.h` contains both a rank-balanced tree (a specific kind of
+red-black tree) and a splay tree.
+
+This was [copied from freebsd](https://github.com/sciascid/tree/blob/master/sys_tree.h)
+and modified to be a standalone module with no dependencies on freebsd.
+
+This is not thread-safe. If used across threads, be sure to protect with
+synchronization primitives.
+
+Simplified API:
+
+```c
+// Add an RB_ENTRY to your own struct
+struct type {
+        RB_ENTRY(node) node; // 3 pointers
+        int whatever_you_want;
+        // ...
+};
+
+// Defines tree head type.
+// Expands to: struct name { struct type *root; }
+RB_HEAD(name, type);
+
+// Declares and defines functions
+int compare(struct type *a, struct type *b);
+RB_PROTOTYPE(name, type, field, compare);
+RB_GENERATE(name, type, field, compare);
+
+// Basic Usage
+void RB_INIT(struct name*);
+int RB_EMPTY(name, struct name*);
+struct type* RB_INSERT(name, struct name*, struct type*);
+struct type* RB_REMOVE(name, struct name*, struct type*);
+struct type* RB_FIND(name, struct name*, struct type*);
+struct type* RB_MIN(name, struct name*);
+struct type* RB_MAX(name, struct name*);
+RB_FOREACH(struct type* local_var, name, struct name* head);
+```
+
+The API for a splay tree is identical, just replace `RB_` with `SPLAY_`.
+
+| Operation | Time Complexity |
+| --- | --- |
+| insert() | O(lg n) |
+| remove() | O(lg n) |
+| find()/min()/max() | O(lg n) |
+
+Example code, using an RB tree as a key-value dictionary:
+
+```c
+#include "tree.h"
+#include <stddef.h>
+#include <stdio.h>
+
+// Add an RB_ENTRY to your struct to make it possible to use in a RB tree.
+struct my_container {
+    int key;
+    int value;
+    RB_ENTRY(my_container) node;
+};
+
+// Comparison function, should return:
+//    <0 if a < b
+//    0  if a == b
+//    >0 if a > b
+int my_container_cmp(struct my_container *a, struct my_container *b) {
+    if (a->key < b->key) return (-1);
+    else if (a->key > b->key) return (1);
+    return (0);
+}
+
+// Define types and functions inline
+RB_HEAD(tree, my_container); // defines struct tree
+RB_PROTOTYPE(tree, my_container, node, my_container_cmp);
+RB_GENERATE(tree, my_container, node, my_container_cmp);
+
+int rbtree(void) {
+    struct my_container a = { .key = 75, .value = 76 };
+    struct my_container b = { .key = 13, .value = 14 };
+    struct my_container c = { .key = 1, .value = 99 };
+    struct my_container d = { .key = 56, .value = 17 };
+
+    // Create and initialize a rbtree
+    struct tree root;
+    RB_INIT(&root);
+
+    // Add items to the rbtree
+    RB_INSERT(tree, &root, &a);
+    RB_INSERT(tree, &root, &b);
+    RB_INSERT(tree, &root, &c);
+    RB_INSERT(tree, &root, &d);
+
+    // In-order traversal of rbtree, smallest to largest
+    struct my_container* container;
+    int count = 0;
+    RB_FOREACH(container, tree, &root) {
+        printf("[%d], key %d value %d\n", count, container->key, container->value);
+        count++;
+    }
+
+    // prints:
+    //
+    // [0], key 1 value 99
+    // [1], key 13 value 14
+    // [2], key 56 value 17
+    // [3], key 75 value 76
+
+    // Find a item with key == 13
+    struct my_container query = { .key = 13 };
+    struct my_container* found = RB_FIND(tree, &root, &query);
+
+    // Print and remove the item just found
+    if (found) {
+        printf("found key %d, value = %d\n", found->key, found->value);
+        RB_REMOVE(tree, &root, found);
+    }
+
+    // Iterate over the rbtree again
+    count = 0;
+    RB_FOREACH(container, tree, &root) {
+        printf("[%d], key %d value %d\n", count, container->key, container->value);
+        count++;
+    }
+
+    // prints:
+    //
+    // [0], key 1 value 99
+    // [1], key 56 value 17
+    // [2], key 75 value 76
+}
+```
 
 ## rbtree
 
