@@ -27,12 +27,10 @@
  *
  * $FreeBSD$
  */
-#include <sys/types.h>
-
-#include <sys/tree.h>
+#include "test.h"
+#include "tree.h"
 #include <stdlib.h>
-
-#include <atf-c.h>
+#include <time.h>
 
 struct node {
         SPLAY_ENTRY(node) node;
@@ -57,8 +55,7 @@ SPLAY_GENERATE(tree, node, node, compare);
 #define MIN 5
 #define MAX 5000
 
-ATF_TC_WITHOUT_HEAD(splay_test);
-ATF_TC_BODY(splay_test, tc)
+int splay_test(void)
 {
         struct node *tmp, *ins;
         int i, max, min;
@@ -69,9 +66,9 @@ ATF_TC_BODY(splay_test, tc)
 
         for (i = 0; i < ITER; i++) {
                 tmp = malloc(sizeof(struct node));
-                ATF_REQUIRE_MSG(tmp != NULL, "malloc failed");
+                CHECK_TRUE(tmp != NULL, "malloc failed");
                 do {
-                        tmp->key = arc4random_uniform(MAX-MIN);
+                        tmp->key = rand() % (MAX-MIN);
                         tmp->key += MIN;
                 } while (SPLAY_FIND(tree, &root, tmp) != NULL);
                 if (i == 0)
@@ -82,31 +79,34 @@ ATF_TC_BODY(splay_test, tc)
                         if (tmp->key < min)
                                 min = tmp->key;
                 }
-                ATF_REQUIRE_EQ(NULL, SPLAY_INSERT(tree, &root, tmp));
+                CHECK_TRUE(NULL == SPLAY_INSERT(tree, &root, tmp), "");
         }
 
         ins = SPLAY_MIN(tree, &root);
-        ATF_REQUIRE_MSG(ins != NULL, "SPLAY_MIN error");
-        ATF_CHECK_EQ(min, ins->key);
+        CHECK_TRUE(ins != NULL, "SPLAY_MIN error");
+        CHECK_EQUAL_INT(min, ins->key, "");
         tmp = ins;
         ins = SPLAY_MAX(tree, &root);
-        ATF_REQUIRE_MSG(ins != NULL, "SPLAY_MAX error");
-        ATF_CHECK_EQ(max, ins->key);
+        CHECK_TRUE(ins != NULL, "SPLAY_MAX error");
+        CHECK_EQUAL_INT(max, ins->key, "");
 
-        ATF_CHECK_EQ(tmp, SPLAY_REMOVE(tree, &root, tmp));
+        CHECK_TRUE(tmp == SPLAY_REMOVE(tree, &root, tmp), "");
 
         for (i = 0; i < ITER - 1; i++) {
                 tmp = SPLAY_ROOT(&root);
-                ATF_REQUIRE_MSG(tmp != NULL, "SPLAY_ROOT error");
-                ATF_CHECK_EQ(tmp, SPLAY_REMOVE(tree, &root, tmp));
+                CHECK_TRUE(tmp != NULL, "SPLAY_ROOT error");
+                CHECK_TRUE(tmp == SPLAY_REMOVE(tree, &root, tmp), "");
                 free(tmp);
         }
+
+        return 0;
 }
 
-ATF_TP_ADD_TCS(tp)
+int main(void)
 {
-
-        ATF_TP_ADD_TC(tp, splay_test);
-
-        return (atf_no_error());
+        printf("%d\n", root);
+        time_t t;
+        srand((unsigned)time(&t));
+        RETURN_IF_NONZERO(splay_test());
+        return 0;
 }

@@ -32,7 +32,18 @@
 #ifndef	_SYS_TREE_H_
 #define	_SYS_TREE_H_
 
-#include <sys/cdefs.h>
+#include <stdint.h>
+
+
+#ifndef __unused
+#define __unused __attribute__((unused))
+#endif
+
+#ifndef __inline
+#define __inline inline
+#endif
+
+typedef uintptr_t __uintptr_t;
 
 /*
  * This file defines data structures for different types of trees:

@@ -27,13 +27,12 @@
  *
  * $FreeBSD$
  */
-#include <sys/types.h>
-
-#define _RB_DIAGNOSTIC 1
-#include <sys/tree.h>
+#include "test.h"
+#define _RB_DIAGNOSTIC
+#include "tree.h"
 #include <stdlib.h>
+#include <time.h>
 
-#include <atf-c.h>
 
 struct node {
         RB_ENTRY(node) node;
@@ -56,8 +55,7 @@ RB_GENERATE(tree, node, node, compare);
 
 #define ITER 150
 
-ATF_TC_WITHOUT_HEAD(rb_test);
-ATF_TC_BODY(rb_test, tc)
+int rb_test(void)
 {
         struct node *tmp, *ins, store[ITER];
         int i, j, k, max, min;
@@ -73,7 +71,7 @@ ATF_TC_BODY(rb_test, tc)
 
         /* Randomly shuffle keys */
         for (i = 0; i < ITER; i++) {
-                j = i + arc4random_uniform(ITER - i);
+                j = i + (rand() % (ITER - i));
                 k = store[j].key;
                 store[j].key = store[i].key;
                 store[i].key = k;
@@ -82,34 +80,36 @@ ATF_TC_BODY(rb_test, tc)
         for (i = 0; i < ITER; i++) {
                 for (j = 0; j < i; ++j) {
                         tmp = &store[j];
-                        ATF_REQUIRE_EQ(tmp, RB_FIND(tree, &root, tmp));
+                        CHECK_TRUE(tmp == RB_FIND(tree, &root, tmp), "");
                 }
                 tmp = &store[i];
                 if (tmp->key > max)
                         max = tmp->key;
                 if (tmp->key < min)
                         min = tmp->key;
-                ATF_REQUIRE_EQ(NULL, RB_INSERT(tree, &root, tmp));
+                CHECK_TRUE(NULL == RB_INSERT(tree, &root, tmp), "");
                 ins = RB_MIN(tree, &root);
-                ATF_REQUIRE_MSG(ins != NULL, "RB_MIN error");
-                ATF_CHECK_EQ(min, ins->key);
+                CHECK_TRUE(ins != NULL, "RB_MIN error");
+                CHECK_EQUAL_INT(min, ins->key, "");
                 ins = RB_MAX(tree, &root);
-                ATF_REQUIRE_MSG(ins != NULL, "RB_MAX error");
-                ATF_CHECK_EQ(max, ins->key);
+                CHECK_TRUE(ins != NULL, "RB_MAX error");
+                CHECK_EQUAL_INT(max, ins->key, "");
         }
         tmp = RB_ROOT(&root);
-        ATF_REQUIRE_MSG(tree_RB_RANK(tmp) >= 0, "RB rank balance error");
+        CHECK_TRUE(tree_RB_RANK(tmp) >= 0, "RB rank balance error");
         for (i = 0; i < ITER; i++) {
                 tmp = RB_ROOT(&root);
-                ATF_REQUIRE_MSG(tmp != NULL, "RB_ROOT error");
-                ATF_CHECK_EQ(tmp, RB_REMOVE(tree, &root, tmp));
+                CHECK_TRUE(tmp != NULL, "RB_ROOT error");
+                CHECK_TRUE(tmp == RB_REMOVE(tree, &root, tmp), "");
         }
+
+        return 0;
 }
 
-ATF_TP_ADD_TCS(tp)
+int main(void)
 {
-
-        ATF_TP_ADD_TC(tp, rb_test);
-
-        return (atf_no_error());
+        time_t t;
+        srand((unsigned)time(&t));
+        RETURN_IF_NONZERO(rb_test());
+        return 0;
 }
