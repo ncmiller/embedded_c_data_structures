@@ -1,18 +1,15 @@
 # embedded_c_data_structures
 
-Minimal drop-in libraries for data structures which can be useful on
-embedded systems.
+Minimal, drop-in, header-only libraries for data structures which can be
+useful on embedded systems.
 
 All libraries have the following properties:
 
+* Header-only
 * No dependencies except a small subset of libc (e.g. memset)
 * No dynamic memory allocations
 * No I/O (e.g. stdio.h)
-* No build system required. Simply copy the .h/.c to your project.
-
-Most of these were copied from
-[Zephyr RTOS](https://github.com/zephyrproject-rtos/zephyr)
-and adapted to remove Zephyr-specific dependencies.
+* No build system required. Simply copy the .h to your project.
 
 All memory required for these data structures is allocated by the user,
 and lifetime is managed by the user.
@@ -37,7 +34,6 @@ add a line to the copyright section, for example:
 | slist.h | An intrusive single-linked list |
 | dlist.h | An intrusive double-linked list |
 | tree.h | A balanced binary search tree (rb tree) and a splay tree |
-| rbtree.h | An intrusive red-black tree |
 | ringbuf.h | A circular FIFO queue, lock-free for single-producer, single-consumer usage |
 
 ## slist
@@ -304,122 +300,6 @@ int rbtree(void) {
     // [2], key 75 value 76
 }
 ```
-
-## rbtree
-
-An intrusive red-black tree (.h and .c file).
-
-This is a self-balancing binary search tree, which can be used in a variety
-of ways (e.g. dictionary, priority queue).
-
-This was [copied from zephyrrtos](https://github.com/zephyrproject-rtos/zephyr/blob/zephyr-v3.3.0/include/zephyr/sys/rb.h)
-and modified to be a standalone module with no dependencies on zephyrrtos.
-
-This is not thread-safe. If used across threads, be sure to protect with
-synchronization primitives.
-
-Simplified API:
-
-```c
-void rb_init(struct rbtree *tree, rb_cmp_t compare_fn);
-void rb_insert(rbtree_t *tree, rbnode_t *node);
-void rb_remove(rbtree_t *tree, rbnode_t *node);
-rbnode_t *rb_get_min(rbtree_t *tree);
-rbnode_t *rb_get_max(rbtree_t *tree);
-rbnode_t *rb_find(rbtree_t *tree, rbnode_t* *query);
-bool rb_contains(rbtree_t *tree, rbnode_t *node);
-#define RB_FOR_EACH_CONTAINER(tree, node, field)
-```
-
-| Operation | Time Complexity |
-| --- | --- |
-| insert() | O(lg n) |
-| remove() | O(lg n) |
-| find() | O(lg n) |
-
-Example code, using an rbtree as a key-value dictionary:
-
-```c
-#include "rbtree.h"
-
-// Add a rbnode_t to your struct to make it possible to use in a rbtree
-struct my_container {
-    int key;
-    int value;
-    rbnode_t node;
-};
-
-// Comparison function, should return:
-//    <0 if a < b
-//    0  if a == b
-//    >0 if a > b
-int my_container_cmp(rbnode_t *a, rbnode_t *b) {
-    // Get pointer to the struct containing a and b (i.e. struct my_container)
-    struct my_container *cont_a = CONTAINER_OF(a, struct my_container, node);
-    struct my_container *cont_b = CONTAINER_OF(b, struct my_container, node);
-    return cont_a->key - cont_b->key;
-}
-
-int rbtree(void) {
-    struct my_container a = { .key = 75, .value = 76 };
-    struct my_container b = { .key = 13, .value = 14 };
-    struct my_container c = { .key = 1, .value = 99 };
-    struct my_container d = { .key = 56, .value = 17 };
-
-    // Create and initialize a rbtree
-    rbtree_t my_rbtree;
-    rb_init(&my_rbtree, my_container_cmp);
-
-    // Add items to the rbtree
-    rb_insert(&my_rbtree, &a.node);
-    rb_insert(&my_rbtree, &b.node);
-    rb_insert(&my_rbtree, &c.node);
-    rb_insert(&my_rbtree, &d.node);
-
-    // In-order traversal of rbtree, smallest to largest
-    struct my_container* container;
-    int count = 0;
-    RB_FOR_EACH_CONTAINER(&my_rbtree, container, node) {
-        printf("[%d], key %d value %d\n", count, container->key, container->value);
-        count++;
-    }
-
-    // prints:
-    //
-    // [0], key 1 value 99
-    // [1], key 13 value 14
-    // [2], key 56 value 17
-    // [3], key 75 value 76
-
-    // Find a item with key == 13
-    struct my_container query = { .key = 13 };
-    rbnode_t* found = rb_find(&my_rbtree, &query.node);
-
-    // Print and remove the item just found
-    if (found) {
-        struct my_container *found_item = CONTAINER_OF(found, struct my_container, node);
-        printf("found key %d, value = %d\n", found_item->key, found_item->value);
-        rb_remove(&my_rbtree, found);
-    }
-
-    // Iterate over the rbtree again
-    count = 0;
-    RB_FOR_EACH_CONTAINER(&my_rbtree, container, node) {
-        printf("[%d], key %d value %d\n", count, container->key, container->value);
-        count++;
-    }
-
-    // prints:
-    //
-    // [0], key 1 value 99
-    // [1], key 56 value 17
-    // [2], key 75 value 76
-}
-```
-
-See the
-[Zephyr RTOS rbtree documentation](https://docs.zephyrproject.org/3.0.0/reference/data_structures/rbtree.html)
-for more information.
 
 ## ringbuf
 
